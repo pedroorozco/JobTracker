@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type SubmitEvent } from "react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -13,33 +13,65 @@ type JobApplication = {
     appliedOn: string;
 };
 
-const initialApps: JobApplication[] = [
-    {
-        id: 1,
-        company: "Riot Games",
-        jobTitle: "Staff Software Engineer",
-        status: "Applied",
-        appliedOn: "2026-10-01"
-    },
-    {
-        id: 2,
-        company: "IBM",
-        jobTitle: "Cisco Network Services Specialist",
-        status: "Interview Pending",
-        appliedOn: "2026-09-01"
-    }
-];
-
 
 export default function Home() {
-    const [apps, setApps] = useState<JobApplication[]>(initialApps);
+    // Applications and API request states
+    const [apps, setApplications] = useState<JobApplication[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [isSaving, setIsSaving] = useState(false);
+    const [loadError, setLoadError] = useState("");
+
+    // Form values and submission errors
     const [company, setCompany] = useState("");
     const [jobTitle, setJobTitle] = useState("");
     const [appliedOn, setAppliedOn] = useState("");
     const [error, setError] = useState("");
 
-    function handleAddApplication(event: SubmitEvent<HTMLFormElement>) {
+    useEffect(() => {
+        let ignore = false;
+
+        async function loadApplications() {
+            try {
+                const response = await fetch("/api/applications", {
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error("Application request failed");
+                }
+
+                const data: JobApplication[] = await response.json();
+
+                if (!ignore) {
+                    setApplications(data);
+                    setLoadError("");
+                }
+            } catch {
+                if (!ignore) {
+                    setLoadError("Could not load applications. Refresh page to try again.");
+                }
+            } finally {
+                if (!ignore) {
+                    setIsLoading(false);
+                }
+            }
+        }
+
+        void loadApplications();
+
+        return () => {
+            ignore = true;
+        };
+    }, []);
+
+    async function handleAddApplication(event: SubmitEvent<HTMLFormElement>) {
         event.preventDefault();
+
+        if (isLoading || isSaving || loadError) {
+            return;
+        }
+
+        setError("");
 
         const trimmedCompany = company.trim();
         const trimmedJobTitle = jobTitle.trim();
@@ -49,21 +81,40 @@ export default function Home() {
             return;
         }
 
-        setApps((current) => [
-            ...current,
-            {
-                id: Math.max(0, ...current.map((item) => item.id)) + 1,
-                company: trimmedCompany,
-                jobTitle: trimmedJobTitle,
-                status: "Applied",
-                appliedOn
-            }
-        ]);
+        setIsSaving(true);
 
-        setCompany("");
-        setJobTitle("");
-        setAppliedOn("");
-        setError("");
+        try {
+            const response = await fetch("/api/applications", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    company: trimmedCompany,
+                    jobTitle: trimmedJobTitle,
+                    appliedOn
+                })
+            });
+
+            if (!response.ok) {
+                setError(
+                    response.status === 400 ? "Please check all fields and try again." : "Could not save the application. Please try again."
+                );
+                return;
+            }
+
+            const savedApplication: JobApplication = await response.json();
+
+            setApplications((current) => [savedApplication, ...current]);
+
+            setCompany("");
+            setJobTitle("");
+            setAppliedOn("");
+        } catch {
+            setError("Could not save the application. Please try again.");
+        } finally {
+            setIsSaving(false);
+        }
     }
   return (
     <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
@@ -89,6 +140,8 @@ export default function Home() {
                         value={company}
                         onChange={(event) => setCompany(event.target.value)}
                         placeholder="Example: Spotify"
+                        maxLength={255}
+                        disabled={isSaving}
                         required
                     />
                 </div>
@@ -99,6 +152,8 @@ export default function Home() {
                         value={jobTitle}
                         onChange={(event) => setJobTitle(event.target.value)}
                         placeholder="Example: Applications Developer I"
+                        maxLength={255}
+                        disabled={isSaving}
                         required
                     />
                 </div>
@@ -109,6 +164,7 @@ export default function Home() {
                         type="date"
                         value={appliedOn}
                         onChange={(event) => setAppliedOn(event.target.value)}
+                        disabled={isSaving}
                         required
                     />
                 </div>
@@ -120,8 +176,27 @@ export default function Home() {
                 </p>
             )}
 
-            <Button type="submit">Add Application</Button>
+            <Button type="submit" disabled={isLoading || isSaving || Boolean(loadError)}>{isSaving ? "Saving..." : "Add Application"}</Button>
         </form>
+
+        {isLoading && (
+            <p role="status" className="text-slate-600">
+                Loading Applications...
+            </p>
+        )}
+
+        {loadError && (
+            <p role="alert" className="text-red-600">
+                {loadError}
+            </p>
+        )}
+
+        {!isLoading && !loadError && apps.length === 0 && (
+            <p className="text-slate-600">
+                No applications yet. Add one using the form.
+            </p>
+        )}
+
         <div className="mt-10 overflow-x-auto rounded-lg border border-slate-200 bg-white">
             <table className="w-full text-left">
                 <caption className="sr-only">
