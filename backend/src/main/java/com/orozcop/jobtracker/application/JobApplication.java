@@ -58,4 +58,8 @@ public class JobApplication {
     public LocalDate getAppliedOn() {
         return appliedOn;
     }
+
+    public void changeStatus(String status) {
+        this.status = status;
+    }
 }

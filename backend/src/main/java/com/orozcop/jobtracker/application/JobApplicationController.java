@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -39,5 +42,16 @@ public class JobApplicationController {
         JobApplication savedApplication = repository.save(application);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(JobApplicationResponse.from(savedApplication));
+    }
+
+    @PatchMapping("/{id}/status")
+    public JobApplicationResponse updateApplicationStatus(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateJobApplicationStatusRequest request
+    ) {
+        JobApplication application = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job application not found"));
+        application.changeStatus(request.status());
+        JobApplication savedApplication = repository.save(application);
+        return JobApplicationResponse.from(savedApplication);
     }
 }

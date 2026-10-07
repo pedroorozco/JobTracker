@@ -4,6 +4,7 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 type JobApplication = {
     id: number;
@@ -12,6 +13,13 @@ type JobApplication = {
     status: "Applied" | "Interview Pending" | "Obtained Offer" | "Rejected";
     appliedOn: string;
 };
+
+const APPLICATION_STATUSES: JobApplication["status"][] = [
+    "Applied",
+    "Interview Pending",
+    "Obtained Offer",
+    "Rejected"
+];
 
 
 export default function Home() {
@@ -25,6 +33,8 @@ export default function Home() {
     const [company, setCompany] = useState("");
     const [jobTitle, setJobTitle] = useState("");
     const [appliedOn, setAppliedOn] = useState("");
+    const [updatingId, setUpdatingId] = useState<number | null>(null);
+    const [statusError, setStatusError] = useState("");
     const [error, setError] = useState("");
 
     useEffect(() => {
@@ -116,6 +126,37 @@ export default function Home() {
             setIsSaving(false);
         }
     }
+
+    async function handleStatusChange(applicationId: number, status: JobApplication["status"]) {
+        if (updatingId !== null) {
+            return;
+        }
+
+        setUpdatingId(applicationId);
+        setStatusError("");
+
+        try {
+            const response = await fetch(`/api/applications/${applicationId}/status`, {
+                method: "PATCH",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({status})
+            });
+            if (!response.ok) {
+                setStatusError(response.status === 404 ? "This application could not be found. Refresh the page to reload your applications" : "Could not update the status. Please try again.");
+                return;
+            }
+
+            const updatedApplication: JobApplication = await response.json();
+
+            setApplications((current) => current.map((application) => application.id === updatedApplication.id ? updatedApplication : application));
+        } catch {
+            setStatusError("Could not update the status. Please try again.");
+        } finally {
+            setUpdatingId(null);
+        }
+    }
   return (
     <main className="min-h-screen bg-slate-50 p-8 text-slate-900">
       <h1 className="text-3xl font-bold">
@@ -179,6 +220,12 @@ export default function Home() {
             <Button type="submit" disabled={isLoading || isSaving || Boolean(loadError)}>{isSaving ? "Saving..." : "Add Application"}</Button>
         </form>
 
+        {statusError && (
+            <p role="alert" className="mt-4 text-red-600">
+                {statusError}
+            </p>
+        )}
+
         {isLoading && (
             <p role="status" className="text-slate-600">
                 Loading Applications...
@@ -216,7 +263,31 @@ export default function Home() {
                     <tr key={apps.id} className="border-t border-slate-200">
                         <td className="p-4">{apps.company}</td>
                         <td className="p-4">{apps.jobTitle}</td>
-                        <td className="p-4">{apps.status}</td>
+                        <td className="p-4">
+                            <Select value={apps.status} disabled={updatingId !== null} onValueChange={(value) => { const status = APPLICATION_STATUSES.find((option) => option === value);
+                            if (status) {
+                                void handleStatusChange(apps.id, status);
+                            }
+                            }}>
+                                <SelectTrigger className="w-36">
+                                    <SelectValue />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    {APPLICATION_STATUSES.map((status) => (
+                                        <SelectItem key={status} value={status}>
+                                            {status}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+
+                            {updatingId === apps.id && (
+                                <p role="status" className="mt-1 text-xs text-slate-600">
+                                    Saving status...
+                                </p>
+                            )}
+                        </td>
                         <td className="p-4">{apps.appliedOn}</td>
                     </tr>
                 ))}
