@@ -62,4 +62,14 @@ public class JobApplication {
     public void changeStatus(String status) {
         this.status = status;
     }
+
+    public void updateDetails(
+            String company,
+            String jobTitle,
+            LocalDate appliedOn
+    ) {
+        this.company = company;
+        this.jobTitle = jobTitle;
+        this.appliedOn = appliedOn;
+    }
 }

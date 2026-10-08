@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -53,5 +54,30 @@ public class JobApplicationController {
         application.changeStatus(request.status());
         JobApplication savedApplication = repository.save(application);
         return JobApplicationResponse.from(savedApplication);
+    }
+
+    @PatchMapping("/{id}")
+    public JobApplicationResponse updateApplication(
+            @PathVariable("id") Long id,
+            @Valid @RequestBody UpdateJobApplicationRequest request
+    ) {
+        JobApplication application = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job application not found"));
+        application.updateDetails(
+                request.company().strip(),
+                request.jobTitle().strip(),
+                request.appliedOn()
+        );
+
+        JobApplication savedApplication = repository.save(application);
+        return JobApplicationResponse.from(savedApplication);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteApplication(
+            @PathVariable("id") Long id
+    ) {
+        JobApplication application = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Job application not found"));
+        repository.delete(application);
+        return ResponseEntity.noContent().build();
     }
 }
