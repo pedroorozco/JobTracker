@@ -28,6 +28,67 @@ const APPLICATION_STATUSES: JobApplication["status"][] = [
     "Rejected",
 ];
 
+type ApplicationSankeyNodeProps = {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+    index: number;
+    payload: {
+        name: string;
+        value: number;
+    };
+    onSelect: (name: string) => void;
+};
+
+const APPLICATION_NODE_COLORS: Record<string, string> = {
+    "Jobs applied to": "#000000",
+    "Applied": "#0284C7",
+    "Interview Pending": "#FFBF00",
+    "Obtained Offer": "#80EF80",
+    "Rejected": "#C30F16"
+};
+
+// AI generated snippet
+function ApplicationSankeyNode({x, y, width, height, index, payload, onSelect}: ApplicationSankeyNodeProps) {
+    const isRoot = index === 0;
+    const labelX = isRoot ? x + width + 12 : x - 12;
+    const labelY = y + height / 2;
+    const nodeColor = APPLICATION_NODE_COLORS[payload.name];
+
+    return (
+        <g role="button" tabIndex={0} className="cursor-pointer" onClick={() => onSelect(payload.name)} >
+            <rect
+                x={x}
+                y={y}
+                width={width}
+                height={height}
+                rx={3}
+                fill={nodeColor}
+            />
+            <text
+                x={labelX}
+                y={labelY - 6}
+                textAnchor={isRoot ? "start" : "end"}
+                fontSize={13}
+                fontWeight={600}
+                fill="#000000"
+            >
+                {payload.name}
+                <tspan
+                    x={labelX}
+                    dy={20}
+                    fontSize={12}
+                    fontWeight={400}
+                    fill="#000000"
+                >
+                    {payload.value}
+                </tspan>
+            </text>
+        </g>
+    );
+}
+
 export default function Home() {
     // Applications and API request states
     const [apps, setApplications] = useState<JobApplication[]>([]);
@@ -46,6 +107,7 @@ export default function Home() {
     const [statusFilter, setStatusFilter] = useState<
         JobApplication["status"] | "All"
     >("All");
+    const [showApplications, setShowApplications] = useState(false);
     const [deleteError, setDeleteError] = useState("");
     const [statusError, setStatusError] = useState("");
     const [error, setError] = useState("");
@@ -78,6 +140,12 @@ export default function Home() {
             value: count
         }))
     };
+
+    useEffect(() => {
+        if (showApplications) {
+            document.getElementById("applications")?.scrollIntoView({block: "start"});
+        }
+    }, [showApplications]);
 
     useEffect(() => {
         let ignore = false;
@@ -302,6 +370,22 @@ export default function Home() {
             setDeletingId(null);
         }
     }
+
+    function handleDiagramSelection(name: string) {
+        const nextFilter = name === "Jobs applied to" ? "All" : APPLICATION_STATUSES.find((status) => status === name);
+
+        if (!nextFilter) {
+            return;
+        }
+
+        setSearchQuery("");
+        setStatusFilter(nextFilter);
+        setShowApplications(true);
+
+        if (showApplications) {
+            document.getElementById("applications")?.scrollIntoView({block: "start"});
+        }
+    }
     return (
         <main className="min-h-screen bg-slate-50 text-slate-900">
             <div className="h-screen">
@@ -314,6 +398,10 @@ export default function Home() {
                                 <a
                                     className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
                                     href="#applications"
+                                    onClick={(event) => {
+                                        event.preventDefault();
+                                        handleDiagramSelection("Jobs applied to");
+                                    }}
                                 >
                                     See applications
                                 </a>
@@ -465,15 +553,32 @@ export default function Home() {
                             Application overview
                         </h2>
 
-                        <div className="mt-4 h-[360px] w-full">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <div className="mt-4 h-[400px] w-full">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={600}>
                                 <Sankey
                                     data={sankeyData}
                                     nodeWidth={18}
                                     nodePadding={40}
                                     margin={{top: 20, right: 20, bottom: 20, left: 20}}
-                                    node={{fill: "#0f172a"}}
-                                    link={{stroke: "#38bdf8", strokeOpacity: 0.4}}
+                                    node={(props: Omit<ApplicationSankeyNodeProps, "onSelect">) => (
+                                        <ApplicationSankeyNode {...props} onSelect={handleDiagramSelection} />
+                                    )}
+                                    link={({
+                                        sourceX, sourceY, targetX, targetY, sourceControlX, targetControlX, linkWidth, payload
+                                    }) => (
+                                        <path
+                                            d={`
+                                                M ${sourceX},${sourceY}
+                                                C ${sourceControlX},${sourceY}
+                                                  ${targetControlX},${targetY}
+                                                  ${targetX},${targetY}
+                                            `}
+                                            fill="none"
+                                            stroke={APPLICATION_NODE_COLORS[payload.target.name]}
+                                            strokeWidth={linkWidth}
+                                            strokeOpacity={0.4}
+                                        />
+                                    )}
                                 >
                                         <Tooltip />
                                 </Sankey>
@@ -483,184 +588,182 @@ export default function Home() {
                 )}
                 {!isLoading && !loadError && (
                     <div className="mt-8 flex flex-wrap gap-3">
-                        <Button type="button" variant={statusFilter === "All" ? "default" : "outline"} aria-pressed={statusFilter === "All"} onClick={() => {
-                        setSearchQuery("");
-                        setStatusFilter("All");
-                        }} >
+                        <Button type="button" variant={statusFilter === "All" ? "default" : "outline"} aria-pressed={statusFilter === "All"} onClick={() => handleDiagramSelection("Jobs applied to")} >
                             Jobs applied to ({apps.length})
                         </Button>
 
                         {statusCounts.map(({status, count}) => (
-                            <Button key={status} type="button" variant={statusFilter === status ? "default": "outline"} onClick={() => {
-                                    setSearchQuery("");
-                                    setStatusFilter(status);
-                                }}
-                            >
+                            <Button key={status} type="button" variant={statusFilter === status ? "default": "outline"} onClick={() => handleDiagramSelection(status)} >
                                 {status} ({count})
                             </Button>
                         ))}
                     </div>
                 )}
-                <div className="mt-10 grip gap-4 md:grid-cols-3">
-                    <div className="space-y-2">
-                        <Label htmlFor="application-search">
-                            Search company or job title
-                        </Label>
-                        <Input
-                            id="application-search"
-                            type="search"
-                            value={searchQuery}
-                            onChange={(event) => setSearchQuery(event.target.value)}
-                            placeholder="Search applications..."
-                            disabled={isLoading || Boolean(loadError)}
-                        />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="status-filter">Filter by status</Label>
-                        <Select
-                            value={statusFilter}
-                            disabled={isLoading || Boolean(loadError)}
-                            onValueChange={(value) => {
-                                if (value === "All") {
-                                    setStatusFilter("All");
-                                    return;
-                                }
-                                const status = APPLICATION_STATUSES.find(
-                                    (option) => option === value
-                                );
-                                if (status) {
-                                    setStatusFilter(status);
-                                }
-                            }}
-                        >
-                            <SelectTrigger id="status-filter" className="w-full">
-                                <SelectValue/>
-                            </SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="All">All statuses</SelectItem>
-                                {APPLICATION_STATUSES.map((status) => (
-                                    <SelectItem key={status} value={status}>
-                                        {status}
-                                    </SelectItem>
+                {showApplications && (
+                    <section id="applications" className="mt-8 scroll-mt-8">
+                        <Button type="button" variant="outline" onClick={() => setShowApplications(false)}>Hide
+                            applications</Button>
+                        <div className="mt-10 grid gap-4 md:grid-cols-3">
+                            <div className="space-y-2">
+                                <Label htmlFor="application-search">
+                                    Search company or job title
+                                </Label>
+                                <Input
+                                    id="application-search"
+                                    type="search"
+                                    value={searchQuery}
+                                    onChange={(event) => setSearchQuery(event.target.value)}
+                                    placeholder="Search applications..."
+                                    disabled={isLoading || Boolean(loadError)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="status-filter">Filter by status</Label>
+                                <Select
+                                    value={statusFilter}
+                                    disabled={isLoading || Boolean(loadError)}
+                                    onValueChange={(value) => {
+                                        if (value === "All") {
+                                            setStatusFilter("All");
+                                            return;
+                                        }
+                                        const status = APPLICATION_STATUSES.find(
+                                            (option) => option === value
+                                        );
+                                        if (status) {
+                                            setStatusFilter(status);
+                                        }
+                                    }}
+                                >
+                                    <SelectTrigger id="status-filter" className="w-full">
+                                        <SelectValue/>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="All">All statuses</SelectItem>
+                                        {APPLICATION_STATUSES.map((status) => (
+                                            <SelectItem key={status} value={status}>
+                                                {status}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                            <div className="flex items-end">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    disabled={searchQuery === "" && statusFilter === "All"}
+                                    onClick={() => {
+                                        setSearchQuery("");
+                                        setStatusFilter("All");
+                                    }}
+                                >
+                                    Clear filters
+                                </Button>
+                            </div>
+                        </div>
+                        {!isLoading &&
+                            !loadError &&
+                            apps.length > 0 &&
+                            filteredApps.length === 0 && (
+                                <p className="text-slate-600">
+                                    No applications match your search and filters.
+                                </p>
+                            )
+                        }
+
+                        <div className="mt-10 scroll-mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                            <table className="w-full text-left">
+                                <caption className="sr-only">Applications</caption>
+
+                                <thead className="bg-slate-100">
+                                <tr>
+                                    <th scope="col" className="p-4">
+                                        Company
+                                    </th>
+                                    <th scope="col" className="p-4">
+                                        Job title
+                                    </th>
+                                    <th scope="col" className="p-4">
+                                        Status
+                                    </th>
+                                    <th scope="col" className="p-4">
+                                        Applied on
+                                    </th>
+                                    <th scope="col" className="p-4">
+                                        Actions
+                                    </th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                {filteredApps.map((apps) => (
+                                    <tr key={apps.id} className="border-t border-slate-200">
+                                        <td className="p-4">{apps.company}</td>
+                                        <td className="p-4">{apps.jobTitle}</td>
+                                        <td className="p-4">
+                                            <Select
+                                                value={apps.status}
+                                                disabled={updatingId !== null}
+                                                onValueChange={(value) => {
+                                                    const status = APPLICATION_STATUSES.find(
+                                                        (option) => option === value
+                                                    );
+                                                    if (status) {
+                                                        void handleStatusChange(apps.id, status);
+                                                    }
+                                                }}
+                                            >
+                                                <SelectTrigger className="w-36">
+                                                    <SelectValue/>
+                                                </SelectTrigger>
+
+                                                <SelectContent>
+                                                    {APPLICATION_STATUSES.map((status) => (
+                                                        <SelectItem key={status} value={status}>
+                                                            {status}
+                                                        </SelectItem>
+                                                    ))}
+                                                </SelectContent>
+                                            </Select>
+
+                                            {updatingId === apps.id && (
+                                                <p role="status" className="mt-1 text-xs text-slate-600">
+                                                    Saving status...
+                                                </p>
+                                            )}
+                                        </td>
+                                        <td className="p-4">{apps.appliedOn}</td>
+                                        <td className="p-4">
+                                            <div className="flex gap-2">
+                                                <Button
+                                                    type="button"
+                                                    variant="outline"
+                                                    size="sm"
+                                                    disabled={isMutating || editingId !== null}
+                                                    onClick={() => handleStartEdit(apps)}
+                                                >
+                                                    {editingId === apps.id ? "Editing..." : "Edit"}
+                                                </Button>
+                                                <Button
+                                                    type="button"
+                                                    variant="destructive"
+                                                    size="sm"
+                                                    disabled={isMutating}
+                                                    onClick={() => {
+                                                        void handleDeleteApplication(apps);
+                                                    }}
+                                                >
+                                                    {deletingId === apps.id ? "Deleting..." : "Delete"}
+                                                </Button>
+                                            </div>
+                                        </td>
+                                    </tr>
                                 ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                    <div className="flex items-end">
-                        <Button
-                            type="button"
-                            variant="outline"
-                            disabled={searchQuery === "" && statusFilter === "All"}
-                            onClick={() => {
-                                setSearchQuery("");
-                                setStatusFilter("All");
-                            }}
-                        >
-                            Clear filters
-                        </Button>
-                    </div>
-                </div>
-
-                {!isLoading &&
-                    !loadError &&
-                    apps.length > 0 &&
-                    filteredApps.length === 0 && (
-                        <p className="text-slate-600">
-                            No applications match your search and filters.
-                        </p>
-                    )}
-
-                <div id="applications"
-                     className="mt-10 scroll-mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                    <table className="w-full text-left">
-                        <caption className="sr-only">Applications</caption>
-
-                        <thead className="bg-slate-100">
-                        <tr>
-                            <th scope="col" className="p-4">
-                                Company
-                            </th>
-                            <th scope="col" className="p-4">
-                                Job title
-                            </th>
-                            <th scope="col" className="p-4">
-                                Status
-                            </th>
-                            <th scope="col" className="p-4">
-                                Applied on
-                            </th>
-                            <th scope="col" className="p-4">
-                                Actions
-                            </th>
-                        </tr>
-                        </thead>
-                        <tbody>
-                        {filteredApps.map((apps) => (
-                            <tr key={apps.id} className="border-t border-slate-200">
-                                <td className="p-4">{apps.company}</td>
-                                <td className="p-4">{apps.jobTitle}</td>
-                                <td className="p-4">
-                                    <Select
-                                        value={apps.status}
-                                        disabled={updatingId !== null}
-                                        onValueChange={(value) => {
-                                            const status = APPLICATION_STATUSES.find(
-                                                (option) => option === value
-                                            );
-                                            if (status) {
-                                                void handleStatusChange(apps.id, status);
-                                            }
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-36">
-                                            <SelectValue/>
-                                        </SelectTrigger>
-
-                                        <SelectContent>
-                                            {APPLICATION_STATUSES.map((status) => (
-                                                <SelectItem key={status} value={status}>
-                                                    {status}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-
-                                    {updatingId === apps.id && (
-                                        <p role="status" className="mt-1 text-xs text-slate-600">
-                                            Saving status...
-                                        </p>
-                                    )}
-                                </td>
-                                <td className="p-4">{apps.appliedOn}</td>
-                                <td className="p-4">
-                                    <div className="flex gap-2">
-                                        <Button
-                                            type="button"
-                                            variant="outline"
-                                            size="sm"
-                                            disabled={isMutating || editingId !== null}
-                                            onClick={() => handleStartEdit(apps)}
-                                        >
-                                            {editingId === apps.id ? "Editing..." : "Edit"}
-                                        </Button>
-                                        <Button
-                                            type="button"
-                                            variant="destructive"
-                                            size="sm"
-                                            disabled={isMutating}
-                                            onClick={() => {
-                                                void handleDeleteApplication(apps);
-                                            }}
-                                        >
-                                            {deletingId === apps.id ? "Deleting..." : "Delete"}
-                                        </Button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                        </tbody>
-                    </table>
-                </div>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+                )}
             </div>
         </main>
     );
