@@ -45,8 +45,8 @@ const APPLICATION_NODE_COLORS: Record<string, string> = {
     "Jobs applied to": "#000000",
     "Applied": "#0284C7",
     "Interview Pending": "#FFBF00",
-    "Obtained Offer": "#80EF80",
-    "Rejected": "#C30F16"
+    "Obtained Offer": "#06402B",
+    "Rejected": "#FF1818"
 };
 
 // AI generated snippet
@@ -206,6 +206,9 @@ export default function Home() {
         setError("");
         setStatusError("");
         setDeleteError("");
+        requestAnimationFrame(() => {
+            document.getElementById("applications-overview")?.scrollIntoView({block: "start"});
+        });
     }
 
     async function handleAddApplication(event: SubmitEvent<HTMLFormElement>) {
@@ -271,6 +274,11 @@ export default function Home() {
                     )
             );
             resetForm();
+            if (applicationId !== null) {
+                requestAnimationFrame(() => {
+                    document.getElementById("applications")?.scrollIntoView({block: "start"});
+                });
+            }
         } catch {
             setError("Could not save the application. Please try again.");
         } finally {
@@ -387,7 +395,7 @@ export default function Home() {
         }
     }
     return (
-        <main className="min-h-screen bg-slate-50 text-slate-900">
+        <main className="min-h-screen bg-white text-slate-600">
             <div className="h-screen">
                 <div className="relative overflow-hidden w-full h-full">
                     <div className="h-full flex flex-col bg-[url('https://images.unsplash.com/photo-1601445638532-3c6f6c3aa1d6?q=80&w=686&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D')] bg-cover bg-center bg-no-repeat">
@@ -397,11 +405,7 @@ export default function Home() {
                             <div className="mt-8 flex flex-col items-start gap-3">
                                 <a
                                     className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
-                                    href="#applications"
-                                    onClick={(event) => {
-                                        event.preventDefault();
-                                        handleDiagramSelection("Jobs applied to");
-                                    }}
+                                    href="#applications-overview"
                                 >
                                     See applications
                                 </a>
@@ -429,186 +433,234 @@ export default function Home() {
                 </div>
             </div>
 
-            <div className="mx-auto max-w-6xl px-6 py-12">
-                <h1 className="text-3xl font-bold">Job Application Tracker</h1>
+            <section id="applications-overview" className="relative isolate">
+                <div className="pointer-events-none absolute inset-0 hidden lg:block">
+                    <div className="absolute inset-y-0 right-0 w-[35%] bg-[#008A60]"></div>
+                    <div className="absolute bottom-0 right-[35%] h-[30%] w-[15%] bg-[#66B99F]"></div>
+                    <div className="absolute bottom-0 right-0 h-[30%] w-[35%] bg-[#002D21]"></div>
+                </div>
+                <div
+                    className="h-screen relative z-1 mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-10">
+                    <div className="min-w-0 flex justify-center flex-col border-2 border-emerald-600 p-6 lg:justify-self-start">
+                        <header className="border-b border-slate-200 pb-8">
+                            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                                Job Application Tracker
+                            </h1>
 
-                <p className="mt-3 mb-2 text-slate-600">
-                    Track your job applications, interviews, and offers.
-                </p>
+                            <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                                Track your job applications, interviews, and offers.
+                            </p>
 
-                <p className="mt-5 text-slate-600">
-                    Tracking {apps.length} job applications
-                    {(normalizedSearch !== "" || statusFilter !== "All") &&
-                        `(${filteredApps.length} shown)`}
-                </p>
+                            <p className="mt-5 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">
+                                Tracking {apps.length} job applications
+                                {(normalizedSearch !== "" || statusFilter !== "All") &&
+                                    `(${filteredApps.length} shown)`}
+                            </p>
+                        </header>
 
-                <form
-                    onSubmit={handleAddApplication}
-                    className="mt-10 space-y-4 rounded-lg border border-slate-200 bg-white p-6"
-                >
-                    <h2 className="text-xl font-semibold">
-                        {editingId === null ? "Add an application" : "Edit application"}
-                    </h2>
-                    <div className="grid gap-4 md:grid-cols-3">
-                        <div className="space-y-2">
-                            <Label htmlFor="company">Company</Label>
-                            <Input
-                                id="company"
-                                value={company}
-                                onChange={(event) => setCompany(event.target.value)}
-                                placeholder="Example: Spotify"
-                                maxLength={255}
-                                disabled={isMutating}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="jobTitle">Job Title</Label>
-                            <Input
-                                id="jobTitle"
-                                value={jobTitle}
-                                onChange={(event) => setJobTitle(event.target.value)}
-                                placeholder="Example: Applications Developer I"
-                                maxLength={255}
-                                disabled={isMutating}
-                                required
-                            />
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="appliedOn">Date application submitted</Label>
-                            <Input
-                                id="appliedOn"
-                                type="date"
-                                value={appliedOn}
-                                onChange={(event) => setAppliedOn(event.target.value)}
-                                disabled={isMutating}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    {error && (
-                        <p role="alert" className="text-sm text-red-600">
-                            {error}
-                        </p>
-                    )}
-
-                    <div className="flex gap-3">
-                        <Button
-                            type="submit"
-                            disabled={isLoading || isMutating || Boolean(loadError)}
+                        <form
+                            onSubmit={handleAddApplication}
+                            className="mt-8 space-y-6"
                         >
-                            {isSaving
-                                ? "Saving..."
-                                : editingId === null
-                                    ? "Add Application"
-                                    : "Save changes"}
-                        </Button>
-                        {editingId !== null && (
-                            <Button
-                                type="button"
-                                variant="outline"
-                                disabled={isMutating}
-                                onClick={resetForm}
-                            >
-                                Cancel editing
-                            </Button>
+                            <h2 className="text-xl font-semibold">
+                                {editingId === null ? "Add an application" : "Edit application"}
+                            </h2>
+                            <div className="grid grid-cols-1 gap-5">
+                                <div className="space-y-2">
+                                    <Label htmlFor="company">Company</Label>
+                                    <Input
+                                        className="h-12 rounded-full border-slate-300 bg-white px-5 text-slate-900 placeholder:text-slate-400 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
+                                        id="company"
+                                        value={company}
+                                        onChange={(event) => setCompany(event.target.value)}
+                                        placeholder="Example: Spotify"
+                                        maxLength={255}
+                                        disabled={isMutating}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="jobTitle">Job Title</Label>
+                                    <Input
+                                        className="h-12 rounded-full border-slate-300 bg-white px-5 text-slate-900 placeholder:text-slate-400 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
+                                        id="jobTitle"
+                                        value={jobTitle}
+                                        onChange={(event) => setJobTitle(event.target.value)}
+                                        placeholder="Example: Applications Developer I"
+                                        maxLength={255}
+                                        disabled={isMutating}
+                                        required
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <Label htmlFor="appliedOn">Date application submitted</Label>
+                                    <Input
+                                        className="h-12 rounded-full border-slate-300 bg-white px-5 text-slate-900 placeholder:text-slate-400 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
+                                        id="appliedOn"
+                                        type="date"
+                                        value={appliedOn}
+                                        onChange={(event) => setAppliedOn(event.target.value)}
+                                        disabled={isMutating}
+                                        required
+                                    />
+                                </div>
+                            </div>
+
+                            {error && (
+                                <p role="alert" className="text-sm text-red-600">
+                                    {error}
+                                </p>
+                            )}
+
+                            <div className="flex gap-3">
+                                <Button
+                                    className="h-12 min-w-48 rounded-2xl bg-emerald-700 px-8 text-white hover:bg-emerald-800"
+                                    type="submit"
+                                    disabled={isLoading || isMutating || Boolean(loadError)}
+                                >
+                                    {isSaving
+                                        ? "Saving..."
+                                        : editingId === null
+                                            ? "Add Application"
+                                            : "Save changes"}
+                                </Button>
+                                {editingId !== null && (
+                                    <Button
+                                        className="h-12 rounded-2xl border-slate-300 px-6 text-slate-700 hover:bg-slate-50"
+                                        type="button"
+                                        variant="outline"
+                                        disabled={isMutating}
+                                        onClick={() => {
+                                            resetForm();
+                                            requestAnimationFrame(() => {
+                                                document.getElementById("applications")?.scrollIntoView({block: "start"});
+                                            });
+                                        }}
+                                    >
+                                        Cancel editing
+                                    </Button>
+                                )}
+                            </div>
+                        </form>
+
+                        {statusError && (
+                            <p role="alert" className="mt-4 text-red-600">
+                                {statusError}
+                            </p>
+                        )}
+
+                        {deleteError && (
+                            <p role="alert" className="mt-4 text-red-600">
+                                {deleteError}
+                            </p>
+                        )}
+
+                        {isLoading && (
+                            <p role="status" className="text-slate-600">
+                                Loading Applications...
+                            </p>
+                        )}
+
+                        {loadError && (
+                            <p role="alert" className="text-red-600">
+                                {loadError}
+                            </p>
+                        )}
+
+                        {!isLoading && !loadError && apps.length === 0 && (
+                            <p className="text-slate-600">
+                                No applications yet. Add one using the form.
+                            </p>
                         )}
                     </div>
-                </form>
 
-                {statusError && (
-                    <p role="alert" className="mt-4 text-red-600">
-                        {statusError}
-                    </p>
-                )}
+                    {!isLoading && !loadError && apps.length > 0 && (
+                        <section
+                            className="relative flex w-full min-w-0 flex-col self-center rounded-3-xl border-2 border-white bg-emerald-400 p-4 text-base font-semibold text-white shadow-2xl sm:p-6 lg:aspect-square">
+                            <h2 className="text-xl font-semibold text-black self-center">
+                                Application overview
+                            </h2>
 
-                {deleteError && (
-                    <p role="alert" className="mt-4 text-red-600">
-                        {deleteError}
-                    </p>
-                )}
-
-                {isLoading && (
-                    <p role="status" className="text-slate-600">
-                        Loading Applications...
-                    </p>
-                )}
-
-                {loadError && (
-                    <p role="alert" className="text-red-600">
-                        {loadError}
-                    </p>
-                )}
-
-                {!isLoading && !loadError && apps.length === 0 && (
-                    <p className="text-slate-600">
-                        No applications yet. Add one using the form.
-                    </p>
-                )}
-
-                {!isLoading && !loadError && apps.length > 0 && (
-                    <section className="mt-8 rounded-xl border border-slate-200 bg-white p-6">
-                        <h2 className="text-xl font-semibold">
-                            Application overview
-                        </h2>
-
-                        <div className="mt-4 h-[400px] w-full">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={600}>
-                                <Sankey
-                                    data={sankeyData}
-                                    nodeWidth={18}
-                                    nodePadding={40}
-                                    margin={{top: 20, right: 20, bottom: 20, left: 20}}
-                                    node={(props: Omit<ApplicationSankeyNodeProps, "onSelect">) => (
-                                        <ApplicationSankeyNode {...props} onSelect={handleDiagramSelection} />
-                                    )}
-                                    link={({
-                                        sourceX, sourceY, targetX, targetY, sourceControlX, targetControlX, linkWidth, payload
-                                    }) => (
-                                        <path
-                                            d={`
+                            <div className="mt-4 h-[400px] w-full lg:h-auto lg:min-h-0 lg:flex-1">
+                                <ResponsiveContainer width="100%" height="100%">
+                                    <Sankey
+                                        data={sankeyData}
+                                        nodeWidth={18}
+                                        nodePadding={40}
+                                        margin={{top: 20, right: 20, bottom: 20, left: 20}}
+                                        node={(props: Omit<ApplicationSankeyNodeProps, "onSelect">) => (
+                                            <ApplicationSankeyNode {...props} onSelect={handleDiagramSelection}/>
+                                        )}
+                                        link={({
+                                                   sourceX,
+                                                   sourceY,
+                                                   targetX,
+                                                   targetY,
+                                                   sourceControlX,
+                                                   targetControlX,
+                                                   linkWidth,
+                                                   payload
+                                               }) => (
+                                            <path
+                                                d={`
                                                 M ${sourceX},${sourceY}
                                                 C ${sourceControlX},${sourceY}
                                                   ${targetControlX},${targetY}
                                                   ${targetX},${targetY}
                                             `}
-                                            fill="none"
-                                            stroke={APPLICATION_NODE_COLORS[payload.target.name]}
-                                            strokeWidth={linkWidth}
-                                            strokeOpacity={0.4}
-                                        />
-                                    )}
-                                >
-                                        <Tooltip />
-                                </Sankey>
-                            </ResponsiveContainer>
-                        </div>
-                    </section>
-                )}
-                {!isLoading && !loadError && (
-                    <div className="mt-8 flex flex-wrap gap-3">
-                        <Button type="button" variant={statusFilter === "All" ? "default" : "outline"} aria-pressed={statusFilter === "All"} onClick={() => handleDiagramSelection("Jobs applied to")} >
-                            Jobs applied to ({apps.length})
-                        </Button>
-
-                        {statusCounts.map(({status, count}) => (
-                            <Button key={status} type="button" variant={statusFilter === status ? "default": "outline"} onClick={() => handleDiagramSelection(status)} >
-                                {status} ({count})
+                                                fill="none"
+                                                stroke={APPLICATION_NODE_COLORS[payload.target.name]}
+                                                strokeWidth={linkWidth}
+                                                strokeOpacity={0.75}
+                                            />
+                                        )}
+                                    >
+                                        <Tooltip/>
+                                    </Sankey>
+                                </ResponsiveContainer>
+                            </div>
+                        </section>
+                    )}
+                </div>
+            </section>
+            {showApplications && (
+                <section id="applications" className="grid min-h-screen scroll-mt-8 place-items-center bg-emerald-50/50 px-4 py-12 sm:px-6 lg:px-10">
+                    <div className="w-full min-w-0 max-w-7xl rounded-3xl border-2 border-emerald-600 bg-white p-5 shadow-xl shadow-emerald-950/5 sm:p-8 lg:p-10">
+                        <header className="flex flex-col gap-5 border-b border-slate-200 pb-8 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <h2 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                                    Showing {filteredApps.length} of {apps.length} applications
+                                </h2>
+                            </div>
+                            <Button type="button" variant="outline" className="h-12 shrink-0 rounded-2xl border-slate-300 px-6 text-slate-700 hover:bg-slate-50 focus-visible:ring-emerald-600/20" onClick={() => setShowApplications(false)} >
+                                Hide applications
                             </Button>
-                        ))}
-                    </div>
-                )}
-                {showApplications && (
-                    <section id="applications" className="mt-8 scroll-mt-8">
-                        <Button type="button" variant="outline" onClick={() => setShowApplications(false)}>Hide
-                            applications</Button>
-                        <div className="mt-10 grid gap-4 md:grid-cols-3">
+                        </header>
+                        {!isLoading && !loadError && (
+                            <div className="mt-8 flex flex-wrap gap-3">
+                                <Button type="button" variant={statusFilter === "All" ? "default" : "outline"}
+                                        className={`h-11 rounded-full px-5 font-medium transition-colors focus-visible:ring-emerald-600/20 ${statusFilter === "All" ? "border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 hover:text-emerald-900"}`}
+                                        onClick={() => handleDiagramSelection("Jobs applied to")}>
+                                    Jobs applied to ({apps.length})
+                                </Button>
+
+                                {statusCounts.map(({status, count}) => (
+                                    <Button key={status} type="button"
+                                            variant={statusFilter === status ? "default" : "outline"}
+                                            className={`h-11 rounded-full px-5 font-medium transition-colors focus-visible:ring-emerald-600/20 ${statusFilter === status ? "border border-emerald-700 bg-emerald-700 text-white hover:bg-emerald-800" : "border-emerald-200 bg-white text-emerald-800 hover:bg-emerald-50 hover:text-emerald-900"}`}
+                                            onClick={() => handleDiagramSelection(status)}>
+                                        {status} ({count})
+                                    </Button>
+                                ))}
+                            </div>
+                        )}
+                        <div className="mt-8 grid gap-5 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-5 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] sm:p-6">
                             <div className="space-y-2">
                                 <Label htmlFor="application-search">
                                     Search company or job title
                                 </Label>
                                 <Input
+                                    className="h-12 rounded-full border-slate-300 bg-white px-5 text-slate-900 placeholder:text-slate-400 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20"
                                     id="application-search"
                                     type="search"
                                     value={searchQuery}
@@ -635,10 +687,10 @@ export default function Home() {
                                         }
                                     }}
                                 >
-                                    <SelectTrigger id="status-filter" className="w-full">
+                                    <SelectTrigger id="status-filter" className="h-12 w-full rounded-full border-slate-300 bg-white px-5 text-slate-900 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20">
                                         <SelectValue/>
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent className="rounded-2xl border-emerald-100 bg-white p-1 shadow-lg">
                                         <SelectItem value="All">All statuses</SelectItem>
                                         {APPLICATION_STATUSES.map((status) => (
                                             <SelectItem key={status} value={status}>
@@ -652,6 +704,7 @@ export default function Home() {
                                 <Button
                                     type="button"
                                     variant="outline"
+                                    className="h-12 w-full rounded-2xl border-slate-300 bg-white px-6 text-slate-700 hover:bg-slate-50 focus-visible:ring-emerald-600/20 md:w-auto"
                                     disabled={searchQuery === "" && statusFilter === "All"}
                                     onClick={() => {
                                         setSearchQuery("");
@@ -666,41 +719,42 @@ export default function Home() {
                             !loadError &&
                             apps.length > 0 &&
                             filteredApps.length === 0 && (
-                                <p className="text-slate-600">
+                                <p className="mt-8 rounded-2xl border border-dashed border-emerald-200 bg-emerald-50/50 px-6 py-10 text-center text-slate-600">
                                     No applications match your search and filters.
                                 </p>
                             )
                         }
 
-                        <div className="mt-10 scroll-mt-8 overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                            <table className="w-full text-left">
+                        <div
+                            className="mt-8 scroll-mt-8 overflow-x-auto rounded-2xl border border-emerald-200 bg-white">
+                            <table className="w-full min-w-[800px] text-left text-sm">
                                 <caption className="sr-only">Applications</caption>
 
-                                <thead className="bg-slate-100">
+                                <thead className="bg-[#002D21] text-white">
                                 <tr>
-                                    <th scope="col" className="p-4">
+                                    <th scope="col" className="px-5 py-4 text-sm font-semibold">
                                         Company
                                     </th>
-                                    <th scope="col" className="p-4">
+                                    <th scope="col" className="px-5 py-4 text-sm font-semibold">
                                         Job title
                                     </th>
-                                    <th scope="col" className="p-4">
+                                    <th scope="col" className="px-5 py-4 text-sm font-semibold">
                                         Status
                                     </th>
-                                    <th scope="col" className="p-4">
+                                    <th scope="col" className="px-5 py-4 text-sm font-semibold">
                                         Applied on
                                     </th>
-                                    <th scope="col" className="p-4">
+                                    <th scope="col" className="px-5 py-4 text-sm font-semibold">
                                         Actions
                                     </th>
                                 </tr>
                                 </thead>
                                 <tbody>
                                 {filteredApps.map((apps) => (
-                                    <tr key={apps.id} className="border-t border-slate-200">
-                                        <td className="p-4">{apps.company}</td>
-                                        <td className="p-4">{apps.jobTitle}</td>
-                                        <td className="p-4">
+                                    <tr key={apps.id} className="border-t border-emerald-100 transition-colors even:bg-emerald-50/30 hover:bg-emerald-50">
+                                        <td className="px-5 py-5 font-semibold text-slate-900">{apps.company}</td>
+                                        <td className="px-5 py-5 text-slate-600">{apps.jobTitle}</td>
+                                        <td className="px-5 py-5">
                                             <Select
                                                 value={apps.status}
                                                 disabled={updatingId !== null}
@@ -713,11 +767,11 @@ export default function Home() {
                                                     }
                                                 }}
                                             >
-                                                <SelectTrigger className="w-36">
+                                                <SelectTrigger className="h-10 w-44 rounded-full border-emerald-200 bg-white px-4 text-sm font-medium text-emerald-900 focus-visible:border-emerald-600 focus-visible:ring-emerald-600/20">
                                                     <SelectValue/>
                                                 </SelectTrigger>
 
-                                                <SelectContent>
+                                                <SelectContent className="rounded-2xl border-emerald-100 bg-white p-1 shadow-lg">
                                                     {APPLICATION_STATUSES.map((status) => (
                                                         <SelectItem key={status} value={status}>
                                                             {status}
@@ -732,13 +786,14 @@ export default function Home() {
                                                 </p>
                                             )}
                                         </td>
-                                        <td className="p-4">{apps.appliedOn}</td>
-                                        <td className="p-4">
+                                        <td className="whitespace-nowrap px-5 py-5 tabular-nums text-slate-600">{apps.appliedOn}</td>
+                                        <td className="px-5 py-5">
                                             <div className="flex gap-2">
                                                 <Button
                                                     type="button"
                                                     variant="outline"
                                                     size="sm"
+                                                    className="h-10 rounded-xl border-emerald-200 bg-white px-4 text-emerald-800 hover:bg-emerald-100 hover:text-emerald-900 focus-visible:ring-emerald-600/20"
                                                     disabled={isMutating || editingId !== null}
                                                     onClick={() => handleStartEdit(apps)}
                                                 >
@@ -748,6 +803,7 @@ export default function Home() {
                                                     type="button"
                                                     variant="destructive"
                                                     size="sm"
+                                                    className="h-10 rounded-xl border border-red-200 bg-red-50 px-4 text-red-700 shadow-none hover:bg-red-100 focus-visible:ring-red-600/20"
                                                     disabled={isMutating}
                                                     onClick={() => {
                                                         void handleDeleteApplication(apps);
@@ -762,9 +818,9 @@ export default function Home() {
                                 </tbody>
                             </table>
                         </div>
-                    </section>
-                )}
-            </div>
+                    </div>
+                </section>
+            )}
         </main>
     );
 }
