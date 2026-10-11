@@ -3,6 +3,7 @@ Job application tracker built with Next.js, Spring Boot, and MySQL
 
 ## Features
 
+- Database initializes as empty, so new users must add applications manually
 - Add, edit, and delete applications (company, job title, applied on date). New applications default to 'Applied'
 - Setting status: 'Applied', 'Interview Pending', 'Obtained Offer' or 'Rejected'
 - Search by company name or job title and filter by status. Results are sorted by application date, newest first
