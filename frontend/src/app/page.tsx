@@ -122,7 +122,7 @@ export default function Home() {
         const matchesStatus =
             statusFilter === "All" || application.status === statusFilter;
         return matchesSearch && matchesStatus;
-    });
+    }).sort((a, b) => b.appliedOn.localeCompare(a.appliedOn) || b.id - a.id);
 
     const statusCounts = APPLICATION_STATUSES.map((status) => ({
         status,
@@ -406,7 +406,7 @@ export default function Home() {
                             <div className="mt-8 flex flex-col items-start gap-3">
                                 <a
                                     className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
-                                    href="#applications-overview"
+                                    href="#applications-sankey"
                                 >
                                     See applications
                                 </a>
@@ -424,33 +424,31 @@ export default function Home() {
                     <div className="absolute bottom-0 right-[35%] h-[30%] w-[15%] bg-[#66B99F]"></div>
                     <div className="absolute bottom-0 right-0 h-[30%] w-[35%] bg-[#002D21]"></div>
                 </div>
-                <div
-                    className="h-screen relative z-1 mx-auto grid max-w-7xl grid-cols-1 items-stretch gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-10">
-                    <div className="min-w-0 flex justify-center flex-col border-2 border-emerald-600 p-6 lg:justify-self-start">
-                        <header className="border-b border-slate-200 pb-8">
-                            <h1 className="text-3xl font-semibold tracking-tight text-slate-900 sm:text-4xl">
+                <div className="min-h-screen relative z-1 mx-auto grid max-w-7xl grid-cols-1 justify-items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-2 lg:px-10 2xl:max-w-none">
+                    <div className="min-w-0 flex flex-col justify-center bg-emerald-950 p-10 w-4/5 max-w-none lg:w-full 2xl:w-4/5 2xl:h-[1200px] 2xl:self-stretch">
+                        <header className="border-b border-t border-slate-200 p-8 flex flex-col items-center">
+                            <h1 className="text-3xl font-semibold tracking-tight text-white sm:text-4xl">
                                 Job Application Tracker
                             </h1>
 
-                            <p className="mt-3 max-w-xl text-base leading-relaxed text-slate-600 sm:text-lg">
+                            <p className="mt-3 max-w-xl text-base leading-relaxed text-white sm:text-lg">
                                 Track your job applications, interviews, and offers.
                             </p>
 
                             <p className="mt-5 inline-flex rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-sm font-medium text-sky-700">
                                 Tracking {apps.length} job applications
-                                {(normalizedSearch !== "" || statusFilter !== "All") &&
-                                    `(${filteredApps.length} shown)`}
+                                {(normalizedSearch !== "" || statusFilter !== "All")}
                             </p>
                         </header>
 
                         <form
                             onSubmit={handleAddApplication}
-                            className="mt-8 space-y-6"
+                            className="mt-20 space-y-6"
                         >
-                            <h2 className="text-xl font-semibold">
-                                {editingId === null ? "Add an application" : "Edit application"}
+                            <h2 className="text-xl text-center text-white font-semibold">
+                                {editingId === null ? "Add an application" : "Editing application"}
                             </h2>
-                            <div className="grid grid-cols-1 gap-5">
+                            <div className="grid grid-cols-1 gap-5 text-white">
                                 <div className="space-y-2">
                                     <Label htmlFor="company">Company</Label>
                                     <Input
@@ -497,7 +495,7 @@ export default function Home() {
                                 </p>
                             )}
 
-                            <div className="flex gap-3">
+                            <div className="flex gap-3 justify-center">
                                 <Button
                                     className="h-12 min-w-48 rounded-2xl bg-emerald-700 px-8 text-white hover:bg-emerald-800"
                                     type="submit"
@@ -560,8 +558,8 @@ export default function Home() {
                     </div>
 
                     {!isLoading && !loadError && apps.length > 0 && (
-                        <section
-                            className="relative flex w-full min-w-0 flex-col self-center rounded-3-xl border-2 border-white bg-emerald-400 p-4 text-base font-semibold text-white shadow-2xl sm:p-6 lg:aspect-square">
+                        <section id="applications-sankey"
+                            className="relative flex w-4/5 max-w-none lg:w-full min-w-0 flex-col self-center rounded-3-xl border-2 border-white bg-emerald-300 p-4 text-base font-semibold text-white shadow-2xl sm:p-6 lg:aspect-square 2xl:w-4/5 2xl:justify-self-center">
                             <h2 className="text-xl font-semibold text-black self-center">
                                 Application overview
                             </h2>
