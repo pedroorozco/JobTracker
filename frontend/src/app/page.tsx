@@ -12,6 +12,7 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import { ResponsiveContainer, Sankey, Tooltip } from "recharts";
+import ImportApplicationsDialog from "@/components/ImportApplicationsDialog";
 
 type JobApplication = {
     id: number;
@@ -409,24 +410,8 @@ export default function Home() {
                                 >
                                     See applications
                                 </a>
-                                <a
-                                    className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
-                                    href="#"
-                                >
-                                    Import all applications tied to Gmail
-                                </a>
-                                <a
-                                    className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
-                                    href="#"
-                                >
-                                    Import all applications tied to Outlook
-                                </a>
-                                <a
-                                    className="inline-flex items-center justify-center rounded-xl border border-white/40 bg-white/10 px-6 py-3 text-base font-semibold text-white transition-colors hover:bg-white/20"
-                                    href="#"
-                                >
-                                    Import all applications tied to LinkedIn
-                                </a>
+                                <ImportApplicationsDialog provider="gmail" />
+                                <ImportApplicationsDialog provider="linkedin" />
                             </div>
                         </div>
                     </div>
